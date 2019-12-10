@@ -1,6 +1,35 @@
 const mysql = require("mysql")
 const inquirer = require("inquirer");
 
+
+class InqUserPrompt {
+    constructor(name, type, message, choices) {
+        this.name = name;
+        this.type = type;
+        this.message = message;
+
+        if (type === "list") {
+            this.choices = choices;
+        }
+
+        if (type === "number") {
+            this.validate = function (value) {
+                if (value === "") {
+                    return "Please enter the ID of the item you would like to purchase"
+                }
+                return true
+            };
+            this.filter = function (value) {
+                if (isNaN(value)) {
+                    return ""
+                }
+                return value
+            }
+        }
+    }
+}
+
+
 const connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
@@ -9,30 +38,13 @@ const connection = mysql.createConnection({
     database: "bamazon_db"
 });
 
-connection.connect(function (err) {
-    if (err) throw err;
-
-    console.log("connected as id ", connection.threadId);
-
-    runSearch()
-
-})
 
 
 
-function runSearch() {
-    inquirer
-        .prompt({
-            name: "action",
-            type: "list",
-            message: "What would you like to do?",
-            choices: [
-                "View inventory",
-                "Make a purchase",
-                "exit"
-            ]
-        })
-        .then(function (answer) {
+
+runSearch = () => {
+    promptUser = (prompt) => {
+        inquirer.prompt(prompt).then(function (answer) {
             switch (answer.action) {
                 case "Make a purchase":
                     purchase();
@@ -42,17 +54,26 @@ function runSearch() {
                     break;
             }
         });
+    }
+
+    const choices = ["View inventory", "Make a purchase", "exit"]
+    const userPrompt = new InqUserPrompt("action", "list", "What would you like to do?", choices);
+    promptUser({ ...userPrompt })
+
 }
 
 
-function displayInventory() {
-    connection.query("SELECT * FROM products INNER JOIN departments ON products.department_id = departments.department_id", function (err, response) {
+
+
+
+displayInventory = () => {
+    connection.query("SELECT * FROM products INNER JOIN departments ON products.department_id = departments.department_id", (err, response) => {
 
         if (err) {
             throw err;
         };
 
-        function fixLen(txt, len) {
+        fixLen = (txt, len) => {
             const spcCount = len - txt.toString().length
             return txt + " ".repeat(spcCount)
         }
@@ -69,46 +90,53 @@ function displayInventory() {
 }
 
 
-function purchase() {
-    connection.query("SELECT product_name FROM products ", function (err, response) {
-        inquirer
-            .prompt([{
-                name: "item",
-                type: "number",
-                message: "What item would you like to purchase?",
-                validate: function (value) {
-                    if (value === "") {
-                        return "Please enter the ID of the item you would like to purchase"
-                    }
-                    return true
-                },
-                filter: function (value) {
-                    if (isNaN(value)) {
-                        return ""
-                    }
-                    return value
+
+
+purchase = () => {
+    promptUser = (prompt) => {
+        inquirer.prompt(prompt).then(function (answer) {
+
+            const qtySold = answer.qty
+
+            connection.query("SELECT * FROM products WHERE item_id = " + answer.item, function (err, response) {
+
+                if (err) {
+                    console.log(err)
                 }
-            },
-            {
-                name: "quantity",
-                type: "number",
-                message: "How many?",
-                validate: function (value) {
-                    if (value === "") {
-                        return "Enter numbers only!"
-                    }
-                    return true
-                },
-                filter: function (value) {
-                    if (isNaN(value)) {
-                        return ""
-                    }
-                    return value
+
+                const item = response[0]
+                currQty = response[0].stock_quantity
+
+                if (item.stock_quantity - qtySold < 0) {
+                    console.log("Sorry, we don't have that many " + item.product_name + "s");
                 }
-            }])
-            .then(function (answer) {
-                console.log(answer)
+
+                else {
+                    connection.query("UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = 1", function (err, response) {
+
+                        if (err) {
+                            console.log(err)
+                        }
+
+                        console.log("You owe $" + item.price * qtySold + " plus tax!");
+                        console.log("Thank you!!");
+                    })
+                }
+                connection.end()
             });
-        connection.end()
-    })
+        })
+    };
+
+    const userItemPrompt = new InqUserPrompt("item", "number", "What item would you like to purchase?");
+    const userQtyPrompt = new InqUserPrompt("qty", "number", "How many?");
+    const userPrompt = [{ ...userItemPrompt }, { ...userQtyPrompt }];
+
+    promptUser(userPrompt)
 }
+
+
+
+
+
+
+runSearch()
