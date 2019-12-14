@@ -1,6 +1,9 @@
 const mysql = require("mysql")
 const inquirer = require("inquirer");
-const InqUserPrompt = require("./inquirerPrompt.js");
+const InqUserPrompt = require("./utilities/inquirerPrompt.js");
+const utilities = require("./utilities/dispSqlData")
+const displayInventory = utilities.displayInventory
+const querySql = utilities.querySql
 
 
 //add parameters for sql database
@@ -30,17 +33,20 @@ runSearch = () => {
         inquirer.prompt(prompt).then(function (ans) {
             switch (ans.action) {
                 case "View Products for Sale":
-                    displayInventory()
+                    displayInventory(connection)
+                    // displayInventory()//("_", "runSearch")
                     break;
 
                 case "View Low Inventory":
-                    displayInventory("LowInventory")
+                    displayInventory(connection, "LowInventory")//, "runSearch")
                     break;
 
                 case "Add to Inventory":
+                    addToInventory()//("_", "addToInventory");
                     break;
 
                 case "Add New Product":
+                    addNewProduct()
                     break;
 
                 case "exit":
@@ -50,7 +56,6 @@ runSearch = () => {
         });
     }
     //create display object for inquirer
-    // const choices = ["View inventory", "Make a purchase", "exit"]
     const choices = ["View Products for Sale", "View Low Inventory", "Add to Inventory", "Add New Product", "exit"]
     const userPrompt = new InqUserPrompt("action", "list", "What would you like to do?", choices);
     //call prompt user inquire
@@ -58,124 +63,86 @@ runSearch = () => {
 }
 
 
-
-
-//this function displays available items within the sql database
-function displayInventory(mode) {
-    
-    let sqlCall = ""
-    if (mode === "LowInventory") {
-        sqlCall = "SELECT * FROM products INNER JOIN departments ON products.department_id = departments.department_id WHERE stock_quantity < 5"
-        console.log("Low Inv Mode")
-        console.log(sqlCall)
-    }
-    else {
-        sqlCall = "SELECT * FROM products INNER JOIN departments ON products.department_id = departments.department_id"
-    }
-
-    //get all items from sql database
-    connection.query(sqlCall, (err, res) => {
-        if (err) {
-            reject(err);
-        };
-
-        //this method created consistent string length and is used to ensure proper inventory display
-        //txt = desired text to return
-        //len = desired length of return string
-        fixLen = (txt, len) => {
-            const spcCount = len - txt.toString().length
-            return txt + " ".repeat(spcCount)
-        }
-
-        //display table header for inventory table
-        console.log(fixLen("ID", 4) + "|" + fixLen("Product", 20) + "|" + fixLen("Department", 15) + "|" + fixLen("Price", 10) + "|" + fixLen("Qty", 6))
-        //loop through each item in the database
-        for (let i = 0; i < res.length; i++) {
-            let item = res[i]
-            //display item and contents
-            console.log(fixLen(item.item_id, 4) + "|" + fixLen(item.product_name, 20) + "|" + fixLen(item.department_name, 15) + "|" + fixLen(item.price, 10) + "|" + fixLen(item.stock_quantity, 6));
-        }
-        console.log("-----------------------------------");
-
-        //display user commands
-        runSearch()
-    });
-}
-
-
-
-
-
-purchase = () => {
+addToInventory = () => {
     promptUser = (prompt) => {
         inquirer.prompt(prompt).then(function (ans) {
 
-            let qtySold = ans.qty
+            let qtyToAdd = ans.qty
 
-            connection.query("SELECT * FROM products WHERE item_id = " + ans.item, function (err, res) {
-
-                if (err) {
-                    console.log(err)
-                }
+            querySql(connection, "SELECT * FROM products WHERE item_id = " + ans.item).then(function (res) {
 
                 const item = res[0]
-                currQty = res[0].stock_quantity
 
+                //update sql database
+                querySql(connection, "UPDATE products SET stock_quantity = stock_quantity + " + qtyToAdd + " WHERE item_id = " + ans.item).then(function (res) {
 
-                // if order cannot be fulfilled
-                if (item.stock_quantity - qtySold < 0) {
-                    //display to user order of item cannot be fulfilled
-                    console.log("Sorry, we don't have that many " + item.product_name + "s");
+                    //display order details
+                    console.log(qtyToAdd + " " + item.product_name + " added to the inventory");
 
-
-                    //create prompt object to ask if user want to purchase available stock
-                    const userPrompt = new InqUserPrompt("purchaseRemaining", "confirm", "We only have " + item.stock_quantity + ". Would you like to purchase our remaining items?");
-                    //promput user
-                    inquirer.prompt({ ...userPrompt }).then(function (resp) {
-                        //if user wants to purchase remaining stock
-                        if (resp.purchaseRemaining) {
-                            //adjust requested quantity to available stock
-                            qtySold = item.stock_quantity
-                            //update sql database
-                            connection.query("UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = " + ans.item, function (err, res) {
-                                displayInventory()
-                            })
-                        }
-
-                        //if user doesn't want to purchase ramaining stock
-                        else {
-                            displayInventory()
-                        }
-                    })
-                }
-
-                //if order request can be fulfilled
-                else {
-                    //update sql database
-                    connection.query("UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = " + ans.item, function (err, res) {
-
-                        if (err) {
-                            console.log(err)
-                        }
-
-                        //display order details
-                        console.log("You owe $" + item.price * qtySold + " plus tax!");
-                        console.log("Thank you!!");
-
-                        //keep order details focused before displaying inventory
-                        setTimeout(() => {
-                            displayInventory()
-                        }, 5000);
-                    })
-                }
+                    //keep order details focused before displaying inventory
+                    setTimeout(() => {
+                        displayInventory(connection)
+                    }, 5000);
+                })
             });
         })
     };
 
     //create user prompt object
-    const userItemPrompt = new InqUserPrompt("item", "number", "What item would you like to purchase?");
+    const userItemPrompt = new InqUserPrompt("item", "number", "What item would you like to replenish?");
     const userQtyPrompt = new InqUserPrompt("qty", "number", "How many?");
     const userPrompt = [{ ...userItemPrompt }, { ...userQtyPrompt }];
     //prompt user
     promptUser(userPrompt)
+}
+
+
+
+
+addNewProduct = () => {
+
+    promptUser = (prompt) => {
+        inquirer.prompt(prompt).then(function (ans) {
+
+            const itemName = ans.name
+            const itemDept = ans.dept
+            const itemPrice = ans.price
+            const itemQty = ans.qty
+
+            //get department id from departments table
+            querySql(connection, "SELECT * FROM bamazon_db.departments WHERE department_name = '" + itemDept + "'").then(function (res) {
+                const deptId = res[0].department_id
+
+                //add new item to products table
+                querySql(connection, "INSERT INTO products (`product_name`, `department_id`, `price`,`stock_quantity`) VALUES ('" + itemName + "'," + deptId + "," + itemPrice + "," + itemQty +")").then(function (res){
+
+                        console.log(res.affectedRows + " product inserted!\n");
+
+                        //keep details focused before displaying inventory
+                        setTimeout(() => {
+                            displayInventory(connection)
+                        }, 5000);
+                    })
+            })
+        });
+    }
+
+    //get departments from departments table to display in inquirer
+    querySql(connection, "SELECT * FROM departments").then(function (res) {
+
+        var depts = []
+
+        for (row of res) {
+            depts.push(row.department_name)
+        }
+
+        //create user prompt object
+        const productNamePrompt = new InqUserPrompt("name", "input", "Input the item name");
+        const productDeptPrompt = new InqUserPrompt("dept", "list", "Input the department in which the item belongs", depts);
+        const productPricePrompt = new InqUserPrompt("price", "number", "Input the item price");
+        const productQtyPrompt = new InqUserPrompt("qty", "number", "Input the item quantity to add to inventory");
+        const userPrompt = [{ ...productNamePrompt }, { ...productDeptPrompt }, { ...productPricePrompt }, { ...productQtyPrompt }];
+
+        promptUser(userPrompt)
+    })
 }
