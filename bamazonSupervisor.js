@@ -1,6 +1,6 @@
 const mysql = require("mysql")
 const inquirer = require("inquirer");
-const InqUserPrompt = require("./utilities/inquirerPrompt.js");
+const inqUserPrompt = require("./utilities/inquirerPrompt.js");
 const utilities = require("./utilities/dispSqlData")
 const displayInventory = utilities.displayInventory
 const querySql = utilities.querySql
@@ -57,9 +57,9 @@ runSearch = () => {
     }
     //create display object for inquirer
     const choices = ["View Products for Sale", "View Low Inventory", "Add to Inventory", "Add New Product", "exit"]
-    const userPrompt = new InqUserPrompt("action", "list", "What would you like to do?", choices);
+    const userPrompt = inqUserPrompt("action", "list", "What would you like to do?", choices);
     //call prompt user inquire
-    promptUser({ ...userPrompt })
+    promptUser(userPrompt)
 }
 
 
@@ -82,16 +82,16 @@ addToInventory = () => {
                     //keep order details focused before displaying inventory
                     setTimeout(() => {
                         displayInventory(connection)
-                    }, 5000);
+                    }, 2000);
                 })
             });
         })
     };
 
     //create user prompt object
-    const userItemPrompt = new InqUserPrompt("item", "number", "What item would you like to replenish?");
-    const userQtyPrompt = new InqUserPrompt("qty", "number", "How many?");
-    const userPrompt = [{ ...userItemPrompt }, { ...userQtyPrompt }];
+    const userItemPrompt = inqUserPrompt("item", "number", "What item would you like to replenish?");
+    const userQtyPrompt = inqUserPrompt("qty", "number", "How many?");
+    const userPrompt = [userItemPrompt, userQtyPrompt];
     //prompt user
     promptUser(userPrompt)
 }
@@ -121,7 +121,7 @@ addNewProduct = () => {
                         //keep details focused before displaying inventory
                         setTimeout(() => {
                             displayInventory(connection)
-                        }, 5000);
+                        }, 2000);
                     })
             })
         });
@@ -137,11 +137,11 @@ addNewProduct = () => {
         }
 
         //create user prompt object
-        const productNamePrompt = new InqUserPrompt("name", "input", "Input the item name");
-        const productDeptPrompt = new InqUserPrompt("dept", "list", "Input the department in which the item belongs", depts);
-        const productPricePrompt = new InqUserPrompt("price", "number", "Input the item price");
-        const productQtyPrompt = new InqUserPrompt("qty", "number", "Input the item quantity to add to inventory");
-        const userPrompt = [{ ...productNamePrompt }, { ...productDeptPrompt }, { ...productPricePrompt }, { ...productQtyPrompt }];
+        const productNamePrompt = inqUserPrompt("name", "input", "Input the item name");
+        const productDeptPrompt = inqUserPrompt("dept", "list", "Input the department in which the item belongs", depts);
+        const productPricePrompt = inqUserPrompt("price", "number", "Input the item price");
+        const productQtyPrompt = inqUserPrompt("qty", "number", "Input the item quantity to add to inventory");
+        const userPrompt = [productNamePrompt, productDeptPrompt, productPricePrompt, productQtyPrompt];
 
         promptUser(userPrompt)
     })
