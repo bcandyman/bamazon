@@ -1,7 +1,6 @@
 //this function displays available items within the sql database
 displayInventory = (connection, mode) => {
-    // return "mode" + mode
-    // var mode = connection
+
     let sqlCall = ""
     if (mode === "LowInventory") {
         sqlCall = "SELECT * FROM products INNER JOIN departments ON products.department_id = departments.department_id WHERE stock_quantity < 5"
@@ -40,11 +39,7 @@ displayInventory = (connection, mode) => {
 
 
 querySql = (connection, sqlCall) => {
-    console.log("_____SQL CALL________")
-    console.log(sqlCall)
-    console.log("_____________________")
     return new Promise(function (resolve, reject) {
-        console.log("Running SQL Query")
         connection.query(sqlCall, (err, res) => {
             if (err) {
                 reject(err);
