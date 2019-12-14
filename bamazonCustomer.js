@@ -50,6 +50,24 @@ runSearch = () => {
 
 
 purchase = () => {
+
+    exitMsgPause = () => {
+        setTimeout(() => {
+            displayInventory(connection)
+        }, 5000);
+    }
+
+    completeTransaction = (item, qtySold) => {
+        querySql(connection, "UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = " + item.item_id).then(function (res) {
+
+            //display order details
+            console.log("You owe $" + item.price * qtySold + " plus tax!");
+            console.log("Thank you!!");
+
+            exitMsgPause()
+        })
+    }
+
     promptUser = (prompt) => {
         inquirer.prompt(prompt).then(function (ans) {
 
@@ -62,10 +80,14 @@ purchase = () => {
 
 
                 // if order cannot be fulfilled
-                if (item.stock_quantity - qtySold < 0) {
+                if (item.stock_quantity === 0) {
+                    //display to user order of item cannot be fulfilled
+                    console.log("Sorry, " + item.product_name + "s are out of stock.");
+                    exitMsgPause()
+                }
+                else if (item.stock_quantity - qtySold < 0) {
                     //display to user order of item cannot be fulfilled
                     console.log("Sorry, we do not have that many " + item.product_name + "s");
-
 
                     //create prompt object to ask if user want to purchase available stock
                     const userPrompt = new InqUserPrompt("purchaseRemaining", "confirm", "We only have " + item.stock_quantity + ". Would you like to purchase our remaining items?");
@@ -76,12 +98,10 @@ purchase = () => {
                             //adjust requested quantity to available stock
                             qtySold = item.stock_quantity
                             //update sql database
-                            querySql(connection, "UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = " + ans.item).then(function (res) {
-                                displayInventory(connection)
-                            })
+                            completeTransaction(item, qtySold)
                         }
 
-                        //if user doesn't want to purchase ramaining stock
+                        //if user doesn't want to purchase remaining stock
                         else {
                             displayInventory(connection)
                         }
@@ -91,17 +111,7 @@ purchase = () => {
                 //if order request can be fulfilled
                 else {
                     //update sql database
-                    querySql(connection, "UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = " + ans.item).then(function (res) {
-
-                        //display order details
-                        console.log("You owe $" + item.price * qtySold + " plus tax!");
-                        console.log("Thank you!!");
-
-                        //keep order details focused before displaying inventory
-                        setTimeout(() => {
-                            displayInventory(connection)
-                        }, 5000);
-                    })
+                    completeTransaction(item, qtySold)
                 }
             });
         })
