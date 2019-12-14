@@ -1,6 +1,9 @@
 const mysql = require("mysql")
 const inquirer = require("inquirer");
-const InqUserPrompt = require("./inquirerPrompt.js");
+const InqUserPrompt = require("./utilities/inquirerPrompt.js");
+const utilities = require("./utilities/dispSqlData.js");
+const displayInventory = utilities.displayInventory;
+const querySql = utilities.querySql;
 
 //add parameters for sql database
 const connection = mysql.createConnection({
@@ -19,7 +22,7 @@ connection.connect(function (err) {
     };
 
     //display available inventory
-    displayInventory();
+    displayInventory(connection);
 })
 
 
@@ -29,7 +32,7 @@ runSearch = () => {
         inquirer.prompt(prompt).then(function (ans) {
             switch (ans.action) {
                 case "Make a purchase":
-                    purchase();
+                    purchase(connection);
                     break;
                 case "exit":
                     connection.end()
@@ -38,49 +41,11 @@ runSearch = () => {
         });
     }
     //create display object for inquirer
-    // const choices = ["View inventory", "Make a purchase", "exit"]
     const choices = ["Make a purchase", "exit"]
     const userPrompt = new InqUserPrompt("action", "list", "What would you like to do?", choices);
     //call prompt user inquire
     promptUser({ ...userPrompt })
 }
-
-
-
-
-//this function displays available items within the sql database
-function displayInventory() {
-    //get all items from sql database
-    connection.query("SELECT * FROM products INNER JOIN departments ON products.department_id = departments.department_id", (err, res) => {
-        if (err) {
-            reject(err);
-        };
-
-        //this method created consistent string length and is used to ensure proper inventory display
-        //txt = desired text to return
-        //len = desired length of return string
-        fixLen = (txt, len) => {
-            const spcCount = len - txt.toString().length
-            return txt + " ".repeat(spcCount)
-        }
-
-        //display table header for inventory table
-        console.log(fixLen("ID", 4) + "|" + fixLen("Product", 20) + "|" + fixLen("Department", 15) + "|" + fixLen("Price", 10) + "|" + fixLen("Qty", 6))
-        
-        //loop through each item in the database
-        for (let i = 0; i < res.length; i++) {
-            let item = res[i]
-            //display item and contents
-            console.log(fixLen(item.item_id, 4) + "|" + fixLen(item.product_name, 20) + "|" + fixLen(item.department_name, 15) + "|" + fixLen(item.price, 10) + "|" + fixLen(item.stock_quantity, 6));
-        }
-        console.log("-----------------------------------");
-
-        //display user commands
-        runSearch()
-    });
-}
-
-
 
 
 
@@ -90,11 +55,7 @@ purchase = () => {
 
             let qtySold = ans.qty
 
-            connection.query("SELECT * FROM products WHERE item_id = " + ans.item, function (err, res) {
-
-                if (err) {
-                    console.log(err)
-                }
+            querySql(connection, "SELECT * FROM products WHERE item_id = " + ans.item).then(function (res) {
 
                 const item = res[0]
                 currQty = res[0].stock_quantity
@@ -115,14 +76,14 @@ purchase = () => {
                             //adjust requested quantity to available stock
                             qtySold = item.stock_quantity
                             //update sql database
-                            connection.query("UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = " + ans.item, function (err, res) {
-                                displayInventory()
+                            querySql(connection, "UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = " + ans.item).then(function (res) {
+                                displayInventory(connection)
                             })
                         }
 
                         //if user doesn't want to purchase ramaining stock
                         else {
-                            displayInventory()
+                            displayInventory(connection)
                         }
                     })
                 }
@@ -130,11 +91,7 @@ purchase = () => {
                 //if order request can be fulfilled
                 else {
                     //update sql database
-                    connection.query("UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = " + ans.item, function (err, res) {
-
-                        if (err) {
-                            console.log(err)
-                        }
+                    querySql(connection, "UPDATE products SET stock_quantity = stock_quantity - " + qtySold + " WHERE item_id = " + ans.item).then(function (res) {
 
                         //display order details
                         console.log("You owe $" + item.price * qtySold + " plus tax!");
@@ -142,7 +99,7 @@ purchase = () => {
 
                         //keep order details focused before displaying inventory
                         setTimeout(() => {
-                            displayInventory()
+                            displayInventory(connection)
                         }, 5000);
                     })
                 }
