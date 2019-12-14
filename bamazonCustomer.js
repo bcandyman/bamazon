@@ -1,6 +1,6 @@
 const mysql = require("mysql")
 const inquirer = require("inquirer");
-const InqUserPrompt = require("./utilities/inquirerPrompt.js");
+const inqUserPrompt = require("./utilities/inquirerPrompt.js");
 const utilities = require("./utilities/dispSqlData.js");
 const displayInventory = utilities.displayInventory;
 const querySql = utilities.querySql;
@@ -42,9 +42,10 @@ runSearch = () => {
     }
     //create display object for inquirer
     const choices = ["Make a purchase", "exit"]
-    const userPrompt = new InqUserPrompt("action", "list", "What would you like to do?", choices);
+    const userPrompt = inqUserPrompt("action", "list", "What would you like to do?", choices);
+
     //call prompt user inquire
-    promptUser({ ...userPrompt })
+    promptUser(userPrompt)
 }
 
 
@@ -54,7 +55,7 @@ purchase = () => {
     exitMsgPause = () => {
         setTimeout(() => {
             displayInventory(connection)
-        }, 5000);
+        }, 2000);
     }
 
     completeTransaction = (item, qtySold) => {
@@ -90,9 +91,9 @@ purchase = () => {
                     console.log("Sorry, we do not have that many " + item.product_name + "s");
 
                     //create prompt object to ask if user want to purchase available stock
-                    const userPrompt = new InqUserPrompt("purchaseRemaining", "confirm", "We only have " + item.stock_quantity + ". Would you like to purchase our remaining items?");
+                    const userPrompt = inqUserPrompt("purchaseRemaining", "confirm", "We only have " + item.stock_quantity + ". Would you like to purchase our remaining items?");
                     //promput user
-                    inquirer.prompt({ ...userPrompt }).then(function (resp) {
+                    inquirer.prompt(userPrompt).then(function (resp) {
                         //if user wants to purchase remaining stock
                         if (resp.purchaseRemaining) {
                             //adjust requested quantity to available stock
@@ -118,9 +119,8 @@ purchase = () => {
     };
 
     //create user prompt object
-    const userItemPrompt = new InqUserPrompt("item", "number", "What item would you like to purchase?");
-    const userQtyPrompt = new InqUserPrompt("qty", "number", "How many?");
-    const userPrompt = [{ ...userItemPrompt }, { ...userQtyPrompt }];
+    const userItemPrompt = inqUserPrompt("item", "number", "What item would you like to purchase?");
+    const userQtyPrompt = inqUserPrompt("qty", "number", "How many?");
     //prompt user
-    promptUser(userPrompt)
+    promptUser([userItemPrompt, userQtyPrompt])
 }
