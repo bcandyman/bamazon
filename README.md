@@ -64,7 +64,7 @@ The two applications within the bamazon suite are:
     2.  Start the application with the 'bamazonCustomer.js' command.
 
     3.  Upon startup, the current inventory within the database will be displayed along with a      customer menu asking what you would like to do. The results from the customer menu are      list below:
-        ![customer main menu](/readmeImages/bamazon_customer_mainMenu.png)
+        ![customer main menu](https://github.com/bcandyman/bamazon/blob/master/readmeImages/bamazon_customer_mainMenu.png)
 
         -   Make a purchase:  This option will display a menu with the below selections:
 
