@@ -4,8 +4,6 @@ displayInventory = (connection, mode) => {
     let sqlCall = ""
     if (mode === "LowInventory") {
         sqlCall = "SELECT * FROM products INNER JOIN departments ON products.department_id = departments.department_id WHERE stock_quantity < 5"
-        console.log("Low Inv Mode")
-        console.log(sqlCall)
     }
     else {
         sqlCall = "SELECT * FROM products INNER JOIN departments ON products.department_id = departments.department_id"
