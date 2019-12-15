@@ -14,6 +14,7 @@ INSERT INTO departments (department_name)
 VALUES ("automotive"),
 ("clothing"),
 ("electronics"),
-("hardware");
+("hardware"),
+("toys");
 
 SELECT * FROM departments;
