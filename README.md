@@ -43,8 +43,8 @@ The two applications within the bamazon suite are:
         'npm install'. This will install all of the node packages needed by the application.
 
         Node packages that will be installed are:
-        a.  Inquirer    -   https://www.npmjs.com/package/inquirer
-        b.  mySQL       -   https://www.npmjs.com/package/mysql
+        a.  [Inquirer](https://www.npmjs.com/package/inquirer)
+        b.  [mySQL](https://www.npmjs.com/package/mysql)
 
     4.  Create the initial database and tables in mySQL. The scripts to create these items are included in
         this repository and are documented below.
@@ -63,7 +63,8 @@ The two applications within the bamazon suite are:
 
     2.  Start the application with the 'bamazonCustomer.js' command.
 
-    3.  Upon startup, the current inventory within the database will be displayed along with a customer menu       asking what you would like to do. The results from the customer menu are list below:
+    3.  Upon startup, the current inventory within the database will be displayed along with a      customer menu asking what you would like to do. The results from the customer menu are      list below:
+        ![customer main menu](readmeImages/bamazon_customer_mainMenu.png)
 
         -   Make a purchase:  This option will display a menu with the below selections:
 
@@ -74,7 +75,7 @@ The two applications within the bamazon suite are:
 
         -   exit: Exits the application
 
-#       Customer Notes and features
+#####   Customer Notes and features
 
         -   When a transaction has been completed, the total cost of the transaction will be displayed.
         
@@ -113,4 +114,3 @@ The two applications within the bamazon suite are:
         -   exit: Exits the application
 
 
-        
